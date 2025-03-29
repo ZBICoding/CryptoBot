@@ -12,12 +12,12 @@ def get_portfolio():
         api_key = lines[0].split()[1].strip()
         api_sec = lines[1].split()[1].strip()
 
-        nonce = str(int(time.time() * 1000))
+        nonce = str(int(time.time() * 1000000))
         uri_path = '/0/private/Balance'
         url = 'https://api.kraken.com' + uri_path
         data = {'nonce': nonce}
         postdata = urllib.parse.urlencode(data)
-        encoded = (nonce + postdata).encode()
+        encoded = (str(nonce) + postdata).encode()
         message = uri_path.encode() + hashlib.sha256(encoded).digest()
         signature = hmac.new(base64.b64decode(api_sec), message, hashlib.sha512)
         sigdigest = base64.b64encode(signature.digest())

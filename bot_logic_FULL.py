@@ -8,7 +8,6 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report
 
-
 MODEL_FILE = "model.pkl"
 FEATURES_FILE = "features.csv"
 
@@ -145,7 +144,7 @@ def plot_ai_decision_graph(df):
         else:
             ax.hlines(level[2], df["Dátum"].iloc[0], df["Dátum"].iloc[-1], linestyles='dotted', colors='red', label="Ellenállás" if level == levels[0] else "")
 
-    ax.set_title("📈 AI CryptoBot – Döntések és technikai szintek")
+    ax.set_title("AI CryptoBot – Döntések és technikai szintek")
     ax.set_ylabel("Árfolyam (EUR)")
     ax.legend(loc="upper left")
     plt.xticks(rotation=45)
@@ -220,6 +219,21 @@ def calculate_confidence_score(rsi_signal, ai_prediction, sentiment):
     normalized_score = (score + 1) / 2
     return max(0, min(normalized_score, 1))
     
+def classify_confidence(score):
+    """
+    Többszintű confidence kategóriák.
+    """
+    if score >= 0.85:
+        return "nagyon erős"
+    elif score >= 0.7:
+        return "erős"
+    elif score >= 0.55:
+        return "közepes"
+    elif score >= 0.4:
+        return "gyenge"
+    else:
+        return "nagyon gyenge"
+
     
 def detect_support_resistance(df, window=5, sensitivity=0.005):
     support = []
@@ -245,3 +259,41 @@ def detect_support_resistance(df, window=5, sensitivity=0.005):
         "resistance": sorted(resistance)
     }
 
+
+def train_model():
+    """
+    Napi újratanításhoz hívható függvény.
+    Betölti a korábbi adathalmazt és újratanítja a RandomForest modellt.
+    """
+    if not os.path.exists(FEATURES_FILE):
+        print("❗ Nincs features.csv, nincs mit tanítani.")
+        return
+
+    df_all = pd.read_csv(FEATURES_FILE, parse_dates=["time"], index_col="time")
+
+    feature_cols = ['rsi', 'ema20', 'ema50', 'ema_diff', 'return', 'volatility']
+    if not all(col in df_all.columns for col in feature_cols + ['target']):
+        print("❗ Hiányzó oszlopok a features.csv-ben.")
+        return
+
+    X = df_all[feature_cols].dropna()
+    y = df_all["target"].loc[X.index]
+
+    if len(X) < 50:
+        print("❗ Túl kevés adat a tanításhoz.")
+        return
+
+    model = RandomForestClassifier(
+        n_estimators=200,
+        max_depth=6,
+        min_samples_split=4,
+        min_samples_leaf=2,
+        random_state=42
+    )
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, shuffle=False, test_size=0.2)
+    model.fit(X_train, y_train)
+    joblib.dump(model, MODEL_FILE)
+
+    acc = accuracy_score(y_test, model.predict(X_test))
+    print(f"📈 Új modell mentve. Teszt pontosság: {acc:.4f}")

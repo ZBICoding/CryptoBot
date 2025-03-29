@@ -2,23 +2,25 @@ import krakenex
 import json
 import os
 
-SETTINGS_FILE = "settings.json"
+LIVE_SETTINGS_FILE = "settings.json"
 
 # 🔁 Betöltés fájlból
-def load_settings():
-    if os.path.exists(SETTINGS_FILE):
-        with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return {}
-
+def load_live_trading_setting() -> bool:
+    if os.path.exists(LIVE_SETTINGS_FILE):
+        try:
+            with open(LIVE_SETTINGS_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                return data.get("LIVE_TRADING", False)
+        except Exception as e:
+            print("⚠️ Hiba a live_settings.json betöltésekor:", e)
+    return False  # alapértelmezett érték
+    
 # 🔐 Alapértelmezett érték
-SETTINGS = load_settings()
 LIVE_TRADING = load_live_trading_setting()
 
-def save_live_trading_setting(value):
-    SETTINGS["live_trading"] = value
-    with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
-        json.dump(SETTINGS, f, indent=2)
+def save_live_trading_setting(enabled: bool):
+    with open(LIVE_SETTINGS_FILE, "w", encoding="utf-8") as f:
+        json.dump({"LIVE_TRADING": enabled}, f)
 
 
 # ✅ Konfigurációs kapcsoló
@@ -84,11 +86,11 @@ def execute_trade(pair, action, volume, price=None):
 
     LIVE_SETTINGS_FILE = "live_settings.json"
 
-    def save_live_trading_setting(enabled: bool):
+def save_live_trading_setting(enabled: bool):
         with open(LIVE_SETTINGS_FILE, "w", encoding="utf-8") as f:
             json.dump({"LIVE_TRADING": enabled}, f)
 
-    def load_live_trading_setting() -> bool:
+def load_live_trading_setting() -> bool:
         if os.path.exists(LIVE_SETTINGS_FILE):
             try:
                 with open(LIVE_SETTINGS_FILE, "r", encoding="utf-8") as f:

@@ -27,3 +27,24 @@ def log_trade(pair, action, result, sentiment, amount):
             sentiment,
             amount
         ])
+
+META_LOG_FILE = "meta_training.csv"
+
+def log_meta_training_data(pair, rsi_signal, ai_pred, sentiment, decision):
+    """
+    Menti a meta-döntéshozatalhoz szükséges adatokat.
+    """
+    file_exists = os.path.exists(META_LOG_FILE)
+
+    with open(META_LOG_FILE, "a", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        if not file_exists:
+            writer.writerow(["Idő", "Coin pár", "RSI_jelzés", "AI", "Hírhangulat", "Döntés"])
+        writer.writerow([
+            datetime.now().isoformat(timespec="seconds"),
+            pair,
+            rsi_signal,
+            ai_pred,
+            sentiment,
+            decision
+        ])

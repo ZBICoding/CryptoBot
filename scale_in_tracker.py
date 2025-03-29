@@ -15,18 +15,32 @@ def save_positions(data):
         json.dump(data, f, indent=2)
 
 def record_trade_step(pair, total_amount):
+    min_order = {
+        "BTCEUR": 0.0002,  # Kraken's min for BTC
+        "ETHEUR": 0.01,     # Min for ETH
+    }.get(pair, 0.1)  # Default for other pairs
+    
+    decimals = {
+        "BTEUR": 8,
+        "ETHEUR": 6
+    }.get(pair, 4)
+    
+    step_amount = round(total_amount * 0.25, 6)
+    if step_amount < min_order:
+        raise ValueError(f"Step amount {step_amount} too small for {pair} (min: {min_order})")
+        
     data = load_positions()
     entry = data.get(pair, {"steps": 0, "amount": 0, "timestamp": str(datetime.now())})
 
     if entry["steps"] < 4:
         entry["steps"] += 1
-        entry["amount"] += round(total_amount * 0.25, 4)
+        entry["amount"] = round(entry["amount"] + step_amount, decimals)  # Fixed: cumulative rounding
         entry["timestamp"] = str(datetime.now())
         data[pair] = entry
         save_positions(data)
         return entry["steps"]
-    else:
-        return 4  # már teljesen beléptünk
+        
+    return 4  # már teljesen beléptünk
 
 def reset_position(pair):
     data = load_positions()
